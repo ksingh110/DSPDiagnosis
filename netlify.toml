@@ -1,15 +1,11 @@
 [build]
   publish = ".next"
   command = "npm run build"
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- package.json package-lock.json next.config.mjs"
 
 [build.environment]
   NODE_VERSION = "18.18.0"
   NPM_VERSION = "9"
   NEXT_TELEMETRY_DISABLED = "1"
-  # Explicitly disable Python
-  PYTHON_VERSION = ""
-  DISABLE_PYTHON = "true"
 
 # Next.js plugin only
 [[plugins]]
@@ -18,15 +14,11 @@
 # Build contexts
 [context.production]
   command = "npm run build"
-  environment = { NODE_ENV = "production", NODE_VERSION = "18.18.0", DISABLE_PYTHON = "true" }
+  environment = { NODE_ENV = "production", NODE_VERSION = "18.18.0" }
 
 [context.deploy-preview]
   command = "npm run build"
-  environment = { NODE_ENV = "production", NODE_VERSION = "18.18.0", DISABLE_PYTHON = "true" }
-
-[context.branch-deploy]
-  command = "npm run build"
-  environment = { NODE_ENV = "production", NODE_VERSION = "18.18.0", DISABLE_PYTHON = "true" }
+  environment = { NODE_ENV = "production", NODE_VERSION = "18.18.0" }
 
 # Next.js redirects
 [[redirects]]
@@ -46,7 +38,6 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    X-XSS-Protection = "1; mode=block"
 
 [[headers]]
   for = "/_next/static/*"
