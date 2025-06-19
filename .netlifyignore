@@ -1,15 +1,69 @@
-# Ignore Python files and ML model files during Netlify build
+# Completely ignore all Python files and dependencies
 *.py
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Ignore all requirements files
+requirements*.txt
+requirements.txt
+requirements-*.txt
+
+# Ignore ML model files
 *.keras
 *.h5
 *.pkl
 *.npz
-requirements*.txt
-scripts/
-api/python-predict.py
-Dockerfile*
-__pycache__/
-*.pyc
-.python-version
+*.joblib
+*.model
+
+# Ignore Python environments
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.env
+
+# Ignore Python configuration
+.python-version
+pyproject.toml
+setup.py
+setup.cfg
+tox.ini
+.coverage
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ignore Docker and backend files
+Dockerfile*
+docker-compose*.yml
+api/python-predict.py
+scripts/
+ml-backend/
+
+# Ignore Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
