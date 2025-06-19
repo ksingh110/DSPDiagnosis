@@ -212,10 +212,10 @@ export default function GetStartedPage() {
           <Card className="flex-1 bg-black/20 border-white/5 backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <div className="space-y-6">
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-orange-200 to-orange-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-orange-200 to-orange-400 bg-clip-text text-transparent leading-tight">
                   DSPDiagnosis
                 </h1>
-                <h2 className="text-xl md:text-2xl text-gray-300">RNN-Powered Genetic Analysis</h2>
+                <h2 className="text-xl md:text-2xl text-gray-300">Advanced Genetic Analysis Platform</h2>
 
                 <div className="space-y-8 mt-12">
                   <div className="space-y-4">

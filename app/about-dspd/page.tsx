@@ -91,7 +91,7 @@ export default function AboutDSPDPage() {
               <Sun className="w-12 h-12 text-orange-400 ml-4" />
             </div>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Understanding Delayed Sleep Phase Disorder and its genetic foundations
+              Revolutionizing Delayed Sleep Phase Disorder detection through advanced genetic-based solutions
             </p>
           </div>
         </div>
