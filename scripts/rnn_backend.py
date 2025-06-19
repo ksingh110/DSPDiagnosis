@@ -3,8 +3,10 @@ from flask_cors import CORS
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import time
 import re
+import io
 
 app = Flask(__name__)
 CORS(app)
@@ -17,87 +19,160 @@ def load_rnn_model():
     try:
         # Replace with your actual model path
         model = tf.keras.models.load_model("/Users/krishaysingh/Downloads/6000_5_if_new_best_model.keras") 
-
         print("RNN model loaded successfully")
     except Exception as e:
         print(f"Error loading model: {e}")
 
-def preprocess_sequence(sequence_text):
+def onehotencoder(fasta_sequence, max_length=13000):
     """
-    Preprocess genetic sequence for RNN input
-    Adjust this based on your model's requirements
+    One-hot encode genetic sequence exactly like your implementation
     """
-    # Remove headers and whitespace
+    sequence_array = np.array(list(fasta_sequence))
+    label_encoder = LabelEncoder()
+    integer_encoded = label_encoder.fit_transform(sequence_array)
+    onehotencoder = OneHotEncoder(sparse_output=False, dtype=np.float32)
+    integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
+    onehot_sequence = onehotencoder.fit_transform(integer_encoded).astype(np.float32)
+    
+    if onehot_sequence.shape[0] < max_length:
+        pad_size = max_length - onehot_sequence.shape[0]
+        padding = np.zeros((pad_size, onehot_sequence.shape[1]))
+        onehot_sequence = np.vstack([onehot_sequence, padding])
+    else:
+        onehot_sequence = onehot_sequence[:max_length, :]
+    
+    return onehot_sequence.flatten()
+
+def process(sequence):
+    """
+    Process sequence (one-hot encoded) and return it in a format suitable for RNN
+    """
+    encoded_seq = onehotencoder(sequence)  # One-hot encode the input sequence
+    return np.array([encoded_seq])  # Return the one-hot encoded sequence as a 2D array (1 sequence)
+
+def load_npz_data(file_content):
+    """
+    Load and validate preprocessed NPZ data
+    """
+    try:
+        # Load NPZ file from bytes
+        npz_file = np.load(io.BytesIO(file_content))
+        
+        # Try common key names for preprocessed data
+        possible_keys = ['data', 'X', 'sequences', 'encoded_sequences', 'features']
+        data = None
+        
+        print(f"NPZ file keys: {list(npz_file.keys())}")
+        
+        for key in possible_keys:
+            if key in npz_file:
+                data = npz_file[key]
+                print(f"Found data under key: {key}")
+                break
+        
+        # If no common key found, use the first array
+        if data is None and len(npz_file.keys()) > 0:
+            first_key = list(npz_file.keys())[0]
+            data = npz_file[first_key]
+            print(f"Using first available key: {first_key}")
+        
+        if data is None:
+            raise ValueError("No data found in NPZ file")
+        
+        # Ensure data is in the right format
+        if len(data.shape) == 1:
+            # If 1D, reshape to (1, features)
+            data = data.reshape(1, -1)
+        elif len(data.shape) == 2:
+            # If 2D, check if it needs to be reshaped
+            if data.shape[0] > 1:
+                print(f"Warning: NPZ contains {data.shape[0]} sequences, using the first one")
+                data = data[0:1]  # Take only the first sequence
+        
+        print(f"Loaded NPZ data shape: {data.shape}")
+        return data.astype(np.float32)
+        
+    except Exception as e:
+        raise ValueError(f"Error loading NPZ file: {str(e)}")
+
+def preprocess_sequence(sequence_text, max_length=13000):
+    """
+    Preprocess genetic sequence for RNN input using your exact method
+    """
+    # Remove FASTA headers and whitespace
     sequence = re.sub(r'>.*\n', '', sequence_text)
     sequence = re.sub(r'\s+', '', sequence)
     
     # Convert to uppercase
     sequence = sequence.upper()
     
-    # Create nucleotide mapping
-    nucleotide_map = {'A': 0, 'T': 1, 'G': 2, 'C': 3, 'N': 4}
+    # Remove any non-nucleotide characters (keep only A, T, G, C)
+    sequence = re.sub(r'[^ATGC]', '', sequence)
     
-    # Convert sequence to numerical representation
-    numerical_sequence = []
-    for nucleotide in sequence:
-        if nucleotide in nucleotide_map:
-            numerical_sequence.append(nucleotide_map[nucleotide])
-        else:
-            numerical_sequence.append(4)  # Unknown nucleotide
+    if len(sequence) == 0:
+        raise ValueError("No valid nucleotides found in sequence")
     
-    # Pad or truncate to fixed length (adjust based on your model)
-    max_length = 1000  # Adjust based on your RNN input size
-    if len(numerical_sequence) > max_length:
-        numerical_sequence = numerical_sequence[:max_length]
-    else:
-        numerical_sequence.extend([4] * (max_length - len(numerical_sequence)))
+    # Use your exact preprocessing method
+    processed_data = process(sequence)
     
-    return np.array(numerical_sequence).reshape(1, -1, 1)
-
-def extract_features(sequence):
-    """
-    Extract additional features for your RNN
-    """
-    sequence = sequence.upper().replace('\n', '').replace('>', '')
-    
-    # Calculate nucleotide frequencies
-    total_length = len(sequence)
-    if total_length == 0:
-        return np.zeros(8)
-    
-    features = [
-        sequence.count('A') / total_length,  # A frequency
-        sequence.count('T') / total_length,  # T frequency
-        sequence.count('G') / total_length,  # G frequency
-        sequence.count('C') / total_length,  # C frequency
-        (sequence.count('G') + sequence.count('C')) / total_length,  # GC content
-        total_length,  # Sequence length
-        sequence.count('CG') / max(1, total_length - 1),  # CpG frequency
-        len(re.findall(r'(A|T){3,}', sequence)) / max(1, total_length)  # AT-rich regions
-    ]
-    
-    return np.array(features)
+    return processed_data
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         start_time = time.time()
         
-        data = request.get_json()
-        sequence = data.get('sequence', '')
-        filename = data.get('filename', 'unknown')
+        # Check if it's form data (file upload) or JSON
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle file upload
+            if 'file' not in request.files:
+                return jsonify({'error': 'No file provided'}), 400
+            
+            file = request.files['file']
+            filename = file.filename
+            file_content = file.read()
+            
+            # Determine file type and process accordingly
+            if filename.lower().endswith('.npz'):
+                print("Processing NPZ file...")
+                processed_sequence = load_npz_data(file_content)
+                sequence_length = "Preprocessed"
+                preprocessing_method = "NPZ (already preprocessed)"
+                
+            else:
+                print("Processing raw sequence file...")
+                sequence_text = file_content.decode('utf-8')
+                processed_sequence = preprocess_sequence(sequence_text)
+                
+                # Calculate original sequence length
+                clean_sequence = re.sub(r'>.*\n', '', sequence_text)
+                clean_sequence = re.sub(r'\s+', '', clean_sequence)
+                clean_sequence = re.sub(r'[^ATGC]', '', clean_sequence.upper())
+                sequence_length = len(clean_sequence)
+                preprocessing_method = "One-hot encoding"
         
-        if not sequence:
-            return jsonify({'error': 'No sequence provided'}), 400
+        else:
+            # Handle JSON request (backward compatibility)
+            data = request.get_json()
+            sequence_text = data.get('sequence', '')
+            filename = data.get('filename', 'unknown')
+            
+            if not sequence_text:
+                return jsonify({'error': 'No sequence provided'}), 400
+            
+            processed_sequence = preprocess_sequence(sequence_text)
+            
+            # Calculate original sequence length
+            clean_sequence = re.sub(r'>.*\n', '', sequence_text)
+            clean_sequence = re.sub(r'\s+', '', clean_sequence)
+            clean_sequence = re.sub(r'[^ATGC]', '', clean_sequence.upper())
+            sequence_length = len(clean_sequence)
+            preprocessing_method = "One-hot encoding"
         
         if model is None:
             return jsonify({'error': 'Model not loaded'}), 500
         
-        # Preprocess the sequence
-        processed_sequence = preprocess_sequence(sequence)
-        
-        # Extract additional features if your model uses them
-        features = extract_features(sequence)
+        print(f"Processed sequence shape: {processed_sequence.shape}")
         
         # Make prediction
         prediction = model.predict(processed_sequence, verbose=0)
@@ -125,18 +200,22 @@ def predict():
             'non_mutation_probability': non_dspd_probability,
             'confidence': confidence,
             'processing_time': processing_time,
-            'sequence_length': len(sequence.replace('\n', '').replace('>', '')),
-            'filename': filename
+            'sequence_length': sequence_length,
+            'filename': filename,
+            'processed_shape': list(processed_sequence.shape),
+            'preprocessing_method': preprocessing_method
         })
         
     except Exception as e:
+        print(f"Prediction error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None
+        'model_loaded': model is not None,
+        'supported_formats': ['FASTA (.fasta, .fa)', 'Text (.txt)', 'Sequence (.seq)', 'Preprocessed (.npz)']
     })
 
 if __name__ == '__main__':
