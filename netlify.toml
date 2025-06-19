@@ -1,17 +1,27 @@
 [build]
   publish = ".next"
   command = "npm run build"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- package.json package-lock.json"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
   NEXT_TELEMETRY_DISABLED = "1"
 
-# Next.js plugin for proper App Router support
+# Next.js plugin for proper deployment
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Redirects for client-side routing
+# Context-specific settings
+[context.production]
+  command = "npm run build"
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  command = "npm run build"
+  environment = { NODE_ENV = "production" }
+
+# Redirects for Next.js App Router
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -22,18 +32,16 @@
   to = "/index.html"
   status = 200
 
-# Headers for security and performance
+# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Cache static assets
 [[headers]]
-  for = "/static/*"
+  for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-# Remove Python functions configuration since we're not using Netlify Functions for ML

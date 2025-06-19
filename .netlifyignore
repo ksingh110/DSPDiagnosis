@@ -1,0 +1,15 @@
+# Ignore Python files and ML model files during Netlify build
+*.py
+*.keras
+*.h5
+*.pkl
+*.npz
+requirements*.txt
+scripts/
+api/python-predict.py
+Dockerfile*
+__pycache__/
+*.pyc
+.python-version
+venv/
+env/
