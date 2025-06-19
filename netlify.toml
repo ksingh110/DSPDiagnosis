@@ -5,23 +5,22 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  NEXT_TELEMETRY_DISABLED = "1"
 
-# Git settings for continuous deployment
-[build.processing]
-  skip_processing = false
+# Next.js specific settings
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
-[build.processing.css]
-  bundle = true
-  minify = true
+[context.production]
+  command = "npm run build"
 
-[build.processing.js]
-  bundle = true
-  minify = true
+[context.deploy-preview]
+  command = "npm run build"
 
-[build.processing.html]
-  pretty_urls = true
+[context.branch-deploy]
+  command = "npm run build"
 
-# Redirects for Next.js routing
+# Redirects for Next.js App Router
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -31,62 +30,23 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  conditions = {Role = ["admin"]}
 
-# Functions configuration
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
+# Catch-all for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
-# Next.js plugin for proper deployment
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-# Development settings
-[dev]
-  command = "npm run dev"
-  port = 3000
-  publish = ".next"
-  autoLaunch = false
-
-# Branch deploy settings for continuous deployment
-[context.production]
-  command = "npm run build"
-  publish = ".next"
-
-[context.deploy-preview]
-  command = "npm run build"
-  publish = ".next"
-
-[context.branch-deploy]
-  command = "npm run build"
-  publish = ".next"
-
-# Headers for security and performance
+# Headers
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-
-# Cache static assets
-[[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/_next/image/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Form handling (if you add contact forms later)
-[forms]
-  settings = true
