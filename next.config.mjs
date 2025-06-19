@@ -1,17 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  // Remove output: 'export' to allow API routes
+  trailingSlash: false,
+  images: {
+    unoptimized: true, // Required for static export
   },
+  // Ignore build errors for deployment
   typescript: {
     ignoreBuildErrors: true,
   },
-  images: {
-    unoptimized: true,
+  eslint: {
+    ignoreDuringBuilds: true,
   },
-  // Ensure proper static file handling for Netlify
-  trailingSlash: false,
-  output: 'standalone', // Better for Netlify
+  // Disable telemetry
+  telemetry: false,
+  // API routes configuration
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ]
+  },
 }
 
 export default nextConfig

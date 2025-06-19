@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the uploaded file
     const formData = await request.formData()
     const file = formData.get("file") as File
 
@@ -9,87 +10,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Create FormData for Python API
-    const pythonFormData = new FormData()
-    pythonFormData.append("file", file)
+    // For Netlify deployment, we'll use external API or mock data
+    // since TensorFlow can't run in Netlify Functions easily
 
-    // Try local Flask server first (for real predictions), then fall back to Vercel Python
-    const endpoints = [
-      "http://localhost:5000/predict", // Local Flask server with your actual model
-      `${request.nextUrl.origin}/api/python-predict`, // Vercel Python (mock)
-    ]
+    // Try to call external ML service (like Google Cloud Run)
+    const externalApiUrl = process.env.ML_API_URL || "http://localhost:5000"
 
-    let result = null
-    let usedEndpoint = ""
+    try {
+      const mlFormData = new FormData()
+      mlFormData.append("file", file)
 
-    for (const endpoint of endpoints) {
-      try {
-        const pythonResponse = await fetch(endpoint, {
-          method: "POST",
-          body: pythonFormData,
-        })
-
-        if (pythonResponse.ok) {
-          const contentType = pythonResponse.headers.get("content-type")
-          if (contentType?.includes("application/json")) {
-            result = await pythonResponse.json()
-            usedEndpoint = endpoint
-            break
-          }
-        }
-      } catch (error) {
-        console.log(`Endpoint ${endpoint} not available:`, error)
-        continue
-      }
-    }
-
-    // If no endpoint worked, return mock data
-    if (!result) {
-      const fallback = mockResult(file.name)
-      return NextResponse.json({
-        ...fallback,
-        _warning:
-          "No backend available - serving mock data. Run 'python scripts/local_rnn_backend.py' for real predictions.",
-        _endpoints_tried: endpoints,
+      const response = await fetch(`${externalApiUrl}/predict`, {
+        method: "POST",
+        body: mlFormData,
       })
-    }
 
-    return NextResponse.json({
-      prediction: result.prediction,
-      mutation_prob: result.mutation_probability,
-      non_mutation_prob: result.non_mutation_probability,
-      confidence: result.confidence,
-      processing_time: result.processing_time,
-      sequence_length: result.sequence_length,
-      filename: result.filename,
-      processed_shape: result.processed_shape,
-      preprocessing_method: result.preprocessing_method,
-      backend_type: result.backend_type,
-      model_status: result.model_status,
-      raw_prediction: result.raw_prediction,
-      _used_endpoint: usedEndpoint,
-    })
+      if (!response.ok) {
+        throw new Error("External ML API failed")
+      }
+
+      const result = await response.json()
+      return NextResponse.json(result)
+    } catch (mlError) {
+      console.log("ML API not available, using mock data:", mlError)
+
+      // Fallback to mock prediction for demo purposes
+      const mockResult = {
+        prediction: Math.random() > 0.5 ? "DSPD" : "No DSPD",
+        mutation_probability: 0.3 + Math.random() * 0.4,
+        non_mutation_probability: 0.3 + Math.random() * 0.4,
+        confidence: 0.7 + Math.random() * 0.3,
+        processing_time: 0.5 + Math.random() * 2,
+        sequence_length: "Unknown",
+        filename: file.name,
+        processed_shape: [1, 52000],
+        preprocessing_method: "Mock processing for demo",
+        backend_type: "netlify_mock",
+        model_status: "mock_prediction (ML service unavailable)",
+        tensorflow_available: false,
+        model_loaded: false,
+      }
+
+      return NextResponse.json(mockResult)
+    }
   } catch (error) {
-    console.error("Prediction error:", error)
-    return NextResponse.json({ error: "Failed to process genetic sequence" }, { status: 500 })
+    console.error("API Error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-function mockResult(filename: string) {
-  const dspd_prob = 0.3 + Math.random() * 0.4
-  const non_dspd_prob = 1.0 - dspd_prob
-
-  return {
-    prediction: dspd_prob > 0.5 ? "DSPD" : "No DSPD",
-    mutation_prob: dspd_prob,
-    non_mutation_prob: non_dspd_prob,
-    confidence: Math.max(dspd_prob, non_dspd_prob),
-    processing_time: Math.random() * 2 + 1,
-    sequence_length: 13000,
-    filename: filename,
-    processed_shape: [1, 52000],
-    preprocessing_method: "Mock one-hot encoding",
-    backend_type: "mock",
-    model_status: "mock_prediction (no_backend_available)",
-  }
+export async function GET() {
+  return NextResponse.json({
+    status: "healthy",
+    message: "DSPD Prediction API is running",
+    backend_type: "netlify_nextjs",
+    ml_service_url: process.env.ML_API_URL || "not_configured",
+  })
 }

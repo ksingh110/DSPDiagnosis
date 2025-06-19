@@ -1,0 +1,10 @@
+# This file is for backend/ML services only (Google Cloud, local development)
+# NOT used by Netlify frontend deployment
+flask==2.3.3
+flask-cors==4.0.0
+tensorflow==2.15.0
+numpy==1.24.3
+scikit-learn==1.3.0
+pandas==2.0.3
+biopython==1.81
+gunicorn==21.2.0
