@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, Clock, Dna, ArrowLeft, BarChart3, Users, Zap } from "lucide-react"
+import { Moon, Sun, Clock, Dna, BarChart3, Users, Zap } from "lucide-react"
 import Link from "next/link"
 
 export default function AboutDSPDPage() {
@@ -78,16 +78,6 @@ export default function AboutDSPDPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pt-32 pb-16 relative z-10">
-        {/* Back Button */}
-        <div className="mb-8">
-          <Link href="/">
-            <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10">
-              <ArrowLeft className="mr-2 w-4 h-4" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-
         {/* Header Section */}
         <div className="text-center mb-16">
           <div
@@ -208,11 +198,6 @@ export default function AboutDSPDPage() {
                   className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-3 font-semibold"
                 >
                   Try It Today
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8 py-3">
-                  Back to Home
                 </Button>
               </Link>
             </div>
