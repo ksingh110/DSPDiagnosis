@@ -1,44 +1,44 @@
 [build]
-  publish = ".next"
   command = "npm run build"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
   NEXT_TELEMETRY_DISABLED = "1"
 
-# Next.js specific settings
+# Essential Next.js plugin
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Production context
 [context.production]
   command = "npm run build"
+  environment = { NODE_ENV = "production" }
 
+# Deploy preview context
 [context.deploy-preview]
   command = "npm run build"
+  environment = { NODE_ENV = "production" }
 
+# Branch deploy context
 [context.branch-deploy]
   command = "npm run build"
+  environment = { NODE_ENV = "production" }
 
-# Redirects for Next.js App Router
+# API routes to Netlify Functions
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
-
-# Catch-all for client-side routing
+# SPA fallback for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Headers
+# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -46,6 +46,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Cache optimization
 [[headers]]
   for = "/_next/static/*"
   [headers.values]

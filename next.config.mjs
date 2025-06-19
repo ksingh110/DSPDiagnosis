@@ -9,9 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'export',
-  trailingSlash: true,
-  distDir: '.next',
+  // Ensure proper static file handling for Netlify
+  trailingSlash: false,
+  output: 'standalone', // Better for Netlify
 }
 
 export default nextConfig
